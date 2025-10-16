@@ -372,6 +372,12 @@ class EncryptionTab(QWidget):
         self.output_folder_button.setMinimumHeight(40)
         
         
+        # RSA Passphrase Input
+        rsa_inputs_layout.addWidget(QLabel("Private Key Passphrase (optional)"))
+        self.rsa_passphrase_input = QLineEdit()
+        self.rsa_passphrase_input.setPlaceholderText("Enter passphrase for private key (optional)")
+        self.rsa_passphrase_input.setEchoMode(QLineEdit.Password)
+        rsa_inputs_layout.addWidget(self.rsa_passphrase_input)
 
         
         
@@ -502,24 +508,37 @@ class EncryptionTab(QWidget):
         try:
             key = RSA.generate(2048)
             self.rsa_keys = key
-            private_key_pem = key.export_key().decode('utf-8')
-            public_key_pem = key.publickey().export_key().decode('utf-8')
+            
+            passphrase = self.rsa_passphrase_input.text().strip()
+            if passphrase:
+                private_key_pem = key.export_key(format='PEM', pkcs=8, passphrase=passphrase,
+                                                protection="PBKDF2WithHMAC-SHA1AndAES256-CBC").decode('utf-8')
+            else:
+                private_key_pem = key.export_key(format='PEM', pkcs=8).decode('utf-8')
+            
+            public_key_pem = key.publickey().export_key(format='PEM').decode('utf-8')
+
             output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "key_output")
             os.makedirs(output_dir, exist_ok=True)
-            timestamp = int(time.time())
+
             private_key_path = os.path.join(output_dir, f"private_key.pem")
             public_key_path = os.path.join(output_dir, f"public_key.pem")
+            
             with open(private_key_path, "w") as f:
                 f.write(private_key_pem)
             with open(public_key_path, "w") as f:
                 f.write(public_key_pem)
+            
             self.rsa_private_key_input.setPlainText(private_key_pem)
             self.rsa_public_key_input.setPlainText(public_key_pem)
             self.aes_result_output.append(f"<span style='color: #00ff88;'>✅ RSA key pair generated and saved to <font color='#00d4ff'>{os.path.basename(output_dir)}</font></span>")
             self.aes_result_output.append(f"  - Private Key: {private_key_path}")
             self.aes_result_output.append(f"  - Public Key: {public_key_path}")
+            if passphrase:
+                self.aes_result_output.append(f"  - Private Key is protected with passphrase.")
         except Exception as e:
             self.aes_result_output.append(f"<span style='color: #ff4444;'>❌ Error generating RSA keys: {str(e)}</span>")
+
 
     def encrypt_rsa(self):
         public_key_str = self.rsa_public_key_input.toPlainText()
