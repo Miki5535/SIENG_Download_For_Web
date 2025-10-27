@@ -588,7 +588,12 @@ class ImageTab(QWidget):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = uuid.uuid4().hex[:8]
         input_ext = os.path.splitext(image)[1] 
-        output_path = os.path.join(output_folder, f"hidden_{timestamp}_{unique_id}{input_ext}")
+        
+        print(mode)
+        if mode == "🔹 LSB":
+            output_path = os.path.join(output_folder, f"hidden_{timestamp}_{unique_id}.png")
+        else:
+            output_path = os.path.join(output_folder, f"hidden_{timestamp}_{unique_id}{input_ext}")
 
 
         self.result_output.append("<span style='color: #00d4ff;'>🔄 Starting steganography process...</span>")
